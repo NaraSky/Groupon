@@ -1,0 +1,5 @@
+spring:
+  config:
+    name: Groupon-app
+  profiles:
+    active: dev
