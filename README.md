@@ -123,40 +123,67 @@
 
 ```mermaid
 classDiagram
-    AbstractStrategyRouter<T, D, R> <|-- AbstractGroupBuyMarketSupport<MarketProductEntity, DynamicContext, TrialBalanceEntity>
-    AbstractStrategyRouter<T, D, R> : +StrategyHandler<T, D, R> defaultStrategyHandler
-    AbstractStrategyRouter<T, D, R> : +R router(T requestParameter, D dynamicContext)
-    AbstractStrategyRouter<T, D, R> : +StrategyHandler<T, D, R> get(T requestParameter, D dynamicContext)
-    AbstractStrategyRouter<T, D, R> : +R apply(T requestParameter, D dynamicContext)
-    AbstractStrategyRouter<T, D, R> --|> StrategyMapper<T, D, R>
-    AbstractStrategyRouter<T, D, R> --|> StrategyHandler<T, D, R>
+    %% 接口定义
+    class StrategyHandler {
+        <<interface>>
+        +apply(T, D) : R
+    }
+    class StrategyMapper {
+        <<interface>>
+        +get(T, D) : StrategyHandler
+    }
+    class IIndexGroupBuyMarketService {
+        <<interface>>
+        +indexMarketTrial(MarketProductEntity) : TrialBalanceEntity
+    }
 
-    StrategyHandler<T, D, R> : +R apply(T requestParameter, D dynamicContext)
+    %% 抽象类定义
+    class AbstractStrategyRouter {
+        <<abstract>>
+        -StrategyHandler~T,D,R~ defaultStrategyHandler
+        +router(T, D) : R
+    }
+    class AbstractGroupBuyMarketSupport {
+        <<abstract>>
+    }
 
-    StrategyMapper<T, D, R> : +StrategyHandler<T, D, R> get(T requestParameter, D dynamicContext)
+    %% 具体类定义
+    class IndexGroupBuyMarketServiceImpl {
+        -DefaultActivityStrategyFactory factory
+        +indexMarketTrial(MarketProductEntity) : TrialBalanceEntity
+    }
+    class DefaultActivityStrategyFactory {
+        -RootNode rootNode
+        +strategyHandler() : StrategyHandler
+    }
+    class RootNode {
+        +apply(MarketProductEntity, DynamicContext) : TrialBalanceEntity
+        +get(MarketProductEntity, DynamicContext) : StrategyHandler
+    }
+    class SwitchRoot {
+        +apply(MarketProductEntity, DynamicContext) : TrialBalanceEntity
+        +get(MarketProductEntity, DynamicContext) : StrategyHandler
+    }
+    class MarketNode {
+        +apply(MarketProductEntity, DynamicContext) : TrialBalanceEntity
+        +get(MarketProductEntity, DynamicContext) : StrategyHandler
+    }
+    class EndNode {
+        +apply(MarketProductEntity, DynamicContext) : TrialBalanceEntity
+        +get(MarketProductEntity, DynamicContext) : StrategyHandler
+    }
 
-    IIndexGroupBuyMarketService <|-- IndexGroupBuyMarketServiceImpl
-
-    IndexGroupBuyMarketServiceImpl : +TrialBalanceEntity indexMarketTrial(MarketProductEntity marketProductEntity)
-
-    DefaultActivityStrategyFactory : +StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> strategyHandler()
-    DefaultActivityStrategyFactory : -RootNode rootNode
-
-    RootNode <|-- SwitchRoot
-    RootNode <|-- MarketNode
-    RootNode <|-- EndNode
-
-    RootNode : +TrialBalanceEntity apply(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-    RootNode : +StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-
-    SwitchRoot : +TrialBalanceEntity apply(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-    SwitchRoot : +StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-
-    MarketNode : +TrialBalanceEntity apply(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-    MarketNode : +StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-
-    EndNode : +TrialBalanceEntity apply(MarketProductEntity requestParameter, DynamicContext dynamicContext)
-    EndNode : +StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> get(MarketProductEntity requestParameter, DynamicContext dynamicContext)
+    %% 关系定义
+    AbstractStrategyRouter ..|> StrategyMapper
+    AbstractStrategyRouter ..|> StrategyHandler
+    AbstractGroupBuyMarketSupport --|> AbstractStrategyRouter
+    RootNode --|> AbstractGroupBuyMarketSupport
+    SwitchRoot --|> AbstractGroupBuyMarketSupport
+    MarketNode --|> AbstractGroupBuyMarketSupport
+    EndNode --|> AbstractGroupBuyMarketSupport
+    IndexGroupBuyMarketServiceImpl ..|> IIndexGroupBuyMarketService
+    IndexGroupBuyMarketServiceImpl --> DefaultActivityStrategyFactory
+    DefaultActivityStrategyFactory *-- RootNode
 ```
 
 ## 运行项目
