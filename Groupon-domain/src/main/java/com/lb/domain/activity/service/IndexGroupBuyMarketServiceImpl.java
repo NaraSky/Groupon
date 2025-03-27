@@ -27,6 +27,7 @@ public class IndexGroupBuyMarketServiceImpl implements IIndexGroupBuyMarketServi
     @Override
     public TrialBalanceEntity indexMarketTrial(MarketProductEntity marketProductEntity) throws Exception {
         StrategyHandler<MarketProductEntity, DynamicContext, TrialBalanceEntity> strategyHandler = defaultActivityStrategyFactory.strategyHandler();
+        // 方法会调用 DefaultActivityStrategyFactory 创建的 RootNode 策略处理器。
         TrialBalanceEntity trialBalanceEntity = strategyHandler.apply(marketProductEntity, new DynamicContext());
         return trialBalanceEntity;
     }
