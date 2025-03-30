@@ -1,11 +1,14 @@
 package com.lb.domain.activity.model.valobj;
 
+import com.lb.types.common.Constants;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
+import java.util.Objects;
 
 /**
  * 拼团活动营销配置值对象
@@ -76,6 +79,35 @@ public class GroupBuyActivityDiscountVO {
      * 人群标签规则范围
      */
     private String tagScope;
+
+    /**
+     * 可见限制
+     * 只要存在这样一个值，那么首次获得的默认值就是 false
+     */
+    public boolean isVisible() {
+        if (StringUtils.isBlank(tagScope)) return TagScopeEnumVO.VISIBLE.getAllow();
+        String[] split = tagScope.split(Constants.SPLIT);
+        // 检查第一个元素是否为"1"且有效，若满足则返回不可见状态
+        if (split.length > 0 && Objects.equals(split[0], "1") && StringUtils.isNotBlank(split[0])) {
+            return TagScopeEnumVO.VISIBLE.getRefuse();
+        }
+        return TagScopeEnumVO.VISIBLE.getAllow();
+    }
+
+    /**
+     * 参与限制
+     * 只要存在这样一个值，那么首次获得的默认值就是 false
+     */
+    public boolean isEnable() {
+        if (StringUtils.isBlank(this.tagScope)) return TagScopeEnumVO.ENABLE.getAllow();
+        String[] split = this.tagScope.split(Constants.SPLIT);
+        // 修改条件判断，避免数组越界
+        if (split.length > 1 && Objects.equals(split[1], "2") && StringUtils.isNotBlank(split[1])) {
+            return TagScopeEnumVO.ENABLE.getRefuse();
+        }
+        return TagScopeEnumVO.ENABLE.getAllow();
+    }
+
 
     @Getter
     @Builder

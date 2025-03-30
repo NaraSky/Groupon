@@ -23,12 +23,26 @@ public class IIndexGroupBuyMarketServiceTest {
     @Test
     public void test_indexMarketTrial() throws Exception {
         MarketProductEntity marketProductEntity = new MarketProductEntity();
-        marketProductEntity.setUserId("zhiyu");
+        marketProductEntity.setUserId("userId1");
         marketProductEntity.setSource("s01");
         marketProductEntity.setChannel("c01");
         marketProductEntity.setGoodsId("9890001");
 
         // 方法会调用 DefaultActivityStrategyFactory 创建的 RootNode 策略处理器。
+        TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(marketProductEntity);
+        log.info("请求参数:{}", JSON.toJSONString(marketProductEntity));
+        log.info("返回结果:{}", JSON.toJSONString(trialBalanceEntity));
+    }
+
+
+    @Test
+    public void test_indexMarketTrial_no_tag() throws Exception {
+        MarketProductEntity marketProductEntity = new MarketProductEntity();
+        marketProductEntity.setUserId("userId4");
+        marketProductEntity.setSource("s01");
+        marketProductEntity.setChannel("c01");
+        marketProductEntity.setGoodsId("9890001");
+
         TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(marketProductEntity);
         log.info("请求参数:{}", JSON.toJSONString(marketProductEntity));
         log.info("返回结果:{}", JSON.toJSONString(trialBalanceEntity));
