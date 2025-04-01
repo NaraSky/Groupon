@@ -13,6 +13,7 @@ import com.lb.infrastructure.dao.po.GroupBuyActivity;
 import com.lb.infrastructure.dao.po.GroupBuyDiscount;
 import com.lb.infrastructure.dao.po.SCSkuActivity;
 import com.lb.infrastructure.dao.po.Sku;
+import com.lb.infrastructure.dcc.DCCService;
 import com.lb.infrastructure.redis.IRedisService;
 import org.redisson.api.RBitSet;
 import org.springframework.stereotype.Repository;
@@ -32,6 +33,8 @@ public class ActivityRepository implements IActivityRepository {
     private ISkuDao skuDao;
     @Resource
     private IRedisService redisService;
+    @Resource
+    private DCCService dccService;
 
     @Override
     public GroupBuyActivityDiscountVO queryGroupBuyActivityDiscountVO(Long activityId) {
@@ -105,6 +108,25 @@ public class ActivityRepository implements IActivityRepository {
             return false;
         }
         return bitSet.get(redisService.getIndexFromUserId(userId));
+    }
+
+    /**
+     * 获取降级开关状态（来自DCC配置）
+     * @return true表示开启降级
+     */
+    @Override
+    public boolean downgradeSwitch() {
+        return dccService.isDowngradeSwitch();
+    }
+
+    /**
+     * 判断用户是否在切量范围内
+     * @param userId 用户ID
+     * @return true表示在切量范围内
+     */
+    @Override
+    public boolean cutRange(String userId) {
+        return dccService.isCutRange(userId);
     }
 
 }
