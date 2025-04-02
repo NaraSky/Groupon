@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lb.infrastructure.dao.IGroupBuyOrderDao">
+
+    <!-- 定义GroupBuyOrder实体的字段映射关系 -->
+    <resultMap id="dataMap" type="com.lb.infrastructure.dao.po.GroupBuyOrder">
+        <id column="id" property="id"/>
+        <result column="team_id" property="teamId"/>
+        <result column="activity_id" property="activityId"/>
+        <result column="source" property="source"/>
+        <result column="channel" property="channel"/>
+        <result column="original_price" property="originalPrice"/>
+        <result column="deduction_price" property="deductionPrice"/>
+        <result column="pay_price" property="payPrice"/>
+        <result column="target_count" property="targetCount"/>
+        <result column="complete_count" property="completeCount"/>
+        <result column="lock_count" property="lockCount"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!--
+        插入新的团购订单记录
+        参数：GroupBuyOrder对象
+        返回值：影响的行数
+    -->
+    <insert id="insert" parameterType="com.lb.infrastructure.dao.po.GroupBuyOrder">
+        insert into group_buy_order(
+            team_id, activity_id, source, channel, original_price,
+            deduction_price, pay_price, target_count, complete_count, lock_count, status, create_time, update_time
+        ) values(
+                    #{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
+                    #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount}, #{lockCount}, 0, now(), now()
+                )
+    </insert>
+
+    <!--
+        增加锁定数量，仅当当前锁定数小于目标数量时执行
+        参数：teamId - 团队ID
+        返回值：影响的行数
+    -->
+    <update id="updateAddLockCount" parameterType="java.lang.String">
+        <![CDATA[
+        update group_buy_order
+        set lock_count = lock_count + 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and lock_count < target_count
+        ]]>
+    </update>
+
+    <!--
+        减少锁定数量，仅当当前锁定数大于0时执行
+        参数：teamId - 团队ID
+        返回值：影响的行数
+    -->
+    <update id="updateSubtractionLockCount" parameterType="java.lang.String">
+        update group_buy_order
+        set lock_count = lock_count - 1, update_time= now()
+        where team_id = #{teamId} and lock_count > 0
+    </update>
+
+    <!--
+        根据团队ID查询团购订单的进度信息
+        参数：teamId - 团队ID
+        返回值：包含目标数、完成数、锁定数的GroupBuyOrder对象
+    -->
+    <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="dataMap">
+        select target_count, complete_count, lock_count from group_buy_order
+        where team_id = #{teamId}
+    </select>
+
+</mapper>
