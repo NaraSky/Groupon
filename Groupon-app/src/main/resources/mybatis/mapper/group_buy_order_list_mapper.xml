@@ -53,4 +53,11 @@
           and status = 0
     </select>
 
+    <select id="queryOrderCountByActivityId" parameterType="com.lb.infrastructure.dao.po.GroupBuyOrderList" resultType="java.lang.Integer">
+        select count(id)
+        from group_buy_order_list
+        where user_id = #{userId}
+          and activity_id = #{activityId}
+    </select>
+
 </mapper>
