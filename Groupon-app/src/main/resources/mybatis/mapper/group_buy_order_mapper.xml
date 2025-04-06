@@ -26,13 +26,11 @@
         返回值：影响的行数
     -->
     <insert id="insert" parameterType="com.lb.infrastructure.dao.po.GroupBuyOrder">
-        insert into group_buy_order(
-            team_id, activity_id, source, channel, original_price,
-            deduction_price, pay_price, target_count, complete_count, lock_count, status, create_time, update_time
-        ) values(
-                    #{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
-                    #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount}, #{lockCount}, 0, now(), now()
-                )
+        insert into group_buy_order(team_id, activity_id, source, channel, original_price,
+                                    deduction_price, pay_price, target_count, complete_count, lock_count, status,
+                                    create_time, update_time)
+        values (#{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
+                #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount}, #{lockCount}, 0, now(), now())
     </insert>
 
     <!--
@@ -57,8 +55,10 @@
     -->
     <update id="updateSubtractionLockCount" parameterType="java.lang.String">
         update group_buy_order
-        set lock_count = lock_count - 1, update_time= now()
-        where team_id = #{teamId} and lock_count > 0
+        set lock_count = lock_count - 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and lock_count > 0
     </update>
 
     <!--
@@ -67,8 +67,48 @@
         返回值：包含目标数、完成数、锁定数的GroupBuyOrder对象
     -->
     <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="dataMap">
-        select target_count, complete_count, lock_count from group_buy_order
+        select target_count, complete_count, lock_count
+        from group_buy_order
         where team_id = #{teamId}
     </select>
+
+    <!--
+        根据团队ID查询团购订单的详细信息
+        参数：teamId - 团队ID
+        返回值：包含团队ID、活动ID、目标数、完成数、锁定数和状态的GroupBuyOrder对象
+    -->
+    <select id="queryGroupBuyTeamByTeamId" parameterType="java.lang.String" resultMap="dataMap">
+        select team_id, activity_id, target_count, complete_count, lock_count, status
+        from group_buy_order
+        where team_id = #{teamId}
+    </select>
+
+    <!--
+        将订单状态更新为已完成，仅当当前状态为未完成时执行
+        参数：teamId - 团队ID
+        返回值：影响的行数
+    -->
+    <update id="updateOrderStatus2COMPLETE" parameterType="java.lang.String">
+        update group_buy_order
+        set status     = 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and status = 0
+    </update>
+
+    <!--
+        增加完成数量，仅当当前完成数小于目标数量时执行
+        参数：teamId - 团队ID
+        返回值：影响的行数
+    -->
+    <update id="updateAddCompleteCount" parameterType="java.lang.String">
+        <![CDATA[
+        update group_buy_order
+        set complete_count = complete_count + 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and complete_count < target_count
+        ]]>
+    </update>
 
 </mapper>

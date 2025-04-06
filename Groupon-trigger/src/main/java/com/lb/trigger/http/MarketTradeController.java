@@ -14,7 +14,7 @@ import com.lb.domain.trade.model.entity.PayActivityEntity;
 import com.lb.domain.trade.model.entity.PayDiscountEntity;
 import com.lb.domain.trade.model.entity.UserEntity;
 import com.lb.domain.trade.model.valobj.GroupBuyProgressVO;
-import com.lb.domain.trade.service.ITradeOrderService;
+import com.lb.domain.trade.service.ITradeLockOrderService;
 import com.lb.types.enums.ResponseCode;
 import com.lb.types.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +24,6 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.Objects;
 
-/**
- * 营销交易服务
- */
 @Slf4j
 @RestController()
 @CrossOrigin("*")
@@ -37,7 +34,7 @@ public class MarketTradeController implements IMarketTradeService {
     private IIndexGroupBuyMarketService indexGroupBuyMarketService;
 
     @Resource
-    private ITradeOrderService tradeOrderService;
+    private ITradeLockOrderService tradeOrderService;
 
     /**
      * 拼团营销锁单
@@ -95,15 +92,15 @@ public class MarketTradeController implements IMarketTradeService {
 
             // 营销优惠试算
             TrialBalanceEntity trialBalanceEntity = indexGroupBuyMarketService.indexMarketTrial(MarketProductEntity.builder()
-                                                                                                        .userId(userId)
-                                                                                                        .source(source)
-                                                                                                        .channel(channel)
-                                                                                                        .goodsId(goodsId)
-                                                                                                        .activityId(activityId)
-                                                                                                        .build());
+                    .userId(userId)
+                    .source(source)
+                    .channel(channel)
+                    .goodsId(goodsId)
+                    .activityId(activityId)
+                    .build());
 
             // 人群限定
-            if (!trialBalanceEntity.getIsVisible() || !trialBalanceEntity.getIsEnable()) {
+            if (!trialBalanceEntity.getIsVisible() || !trialBalanceEntity.getIsEnable()){
                 return Response.<LockMarketPayOrderResponseDTO>builder()
                         .code(ResponseCode.E0007.getCode())
                         .info(ResponseCode.E0007.getInfo())
@@ -141,10 +138,10 @@ public class MarketTradeController implements IMarketTradeService {
                     .code(ResponseCode.SUCCESS.getCode())
                     .info(ResponseCode.SUCCESS.getInfo())
                     .data(LockMarketPayOrderResponseDTO.builder()
-                                  .orderId(marketPayOrderEntity.getOrderId())
-                                  .deductionPrice(marketPayOrderEntity.getDeductionPrice())
-                                  .tradeOrderStatus(marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode())
-                                  .build())
+                            .orderId(marketPayOrderEntity.getOrderId())
+                            .deductionPrice(marketPayOrderEntity.getDeductionPrice())
+                            .tradeOrderStatus(marketPayOrderEntity.getTradeOrderStatusEnumVO().getCode())
+                            .build())
                     .build();
         } catch (AppException e) {
             log.error("营销交易锁单业务异常:{} LockMarketPayOrderRequestDTO:{}", lockMarketPayOrderRequestDTO.getUserId(), JSON.toJSONString(lockMarketPayOrderRequestDTO), e);
