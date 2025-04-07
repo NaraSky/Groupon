@@ -7,14 +7,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
-/**
- * 交易支付订单实体对象
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TradePaySuccessEntity {
+public class TradeSettlementRuleCommandEntity {
 
     /** 渠道 */
     private String source;
