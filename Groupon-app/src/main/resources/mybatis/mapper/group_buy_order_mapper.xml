@@ -2,7 +2,6 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lb.infrastructure.dao.IGroupBuyOrderDao">
 
-    <!-- 主resultMap保持不变 -->
     <resultMap id="dataMap" type="com.lb.infrastructure.dao.po.GroupBuyOrder">
         <id column="id" property="id"/>
         <result column="team_id" property="teamId"/>
@@ -18,43 +17,23 @@
         <result column="status" property="status"/>
         <result column="valid_start_time" property="validStartTime"/>
         <result column="valid_end_time" property="validEndTime"/>
+        <result column="notify_url" property="notifyUrl"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
-    <!-- 新增为查询结果定制的resultMap -->
-    <resultMap id="progressResultMap" type="com.lb.infrastructure.dao.po.GroupBuyOrder">
-        <result column="target_count" property="targetCount"/>
-        <result column="complete_count" property="completeCount"/>
-        <result column="lock_count" property="lockCount"/>
-    </resultMap>
-
-    <!-- 团队详情专用resultMap，包含活动ID、状态及时间信息 -->
-    <resultMap id="teamDetailsMap" type="com.lb.infrastructure.dao.po.GroupBuyOrder">
-        <result column="team_id" property="teamId"/>
-        <result column="activity_id" property="activityId"/>
-        <result column="target_count" property="targetCount"/>
-        <result column="complete_count" property="completeCount"/>
-        <result column="lock_count" property="lockCount"/>
-        <result column="status" property="status"/>
-        <result column="valid_start_time" property="validStartTime"/>
-        <result column="valid_end_time" property="validEndTime"/>
-    </resultMap>
-
-    <!-- 插入语句参数化status -->
     <insert id="insert" parameterType="com.lb.infrastructure.dao.po.GroupBuyOrder">
         insert into group_buy_order(
             team_id, activity_id, source, channel, original_price,
             deduction_price, pay_price, target_count, complete_count,
-            lock_count, status, valid_start_time, valid_end_time, create_time, update_time
+            lock_count, status, valid_start_time, valid_end_time, notify_url, create_time, update_time
         ) values(
-            #{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
-            #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount},
-            #{lockCount}, #{status}, #{validStartTime}, #{validEndTime}, now(), now()
-        )
+                    #{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
+                    #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount},
+                    #{lockCount}, 0, #{validStartTime}, #{validEndTime}, #{notifyUrl}, now(), now()
+                )
     </insert>
 
-    <!-- 增加锁定数量（仅当当前锁定数小于目标值时执行） -->
     <update id="updateAddLockCount" parameterType="java.lang.String">
         <![CDATA[
         update group_buy_order
@@ -63,7 +42,6 @@
         ]]>
     </update>
 
-    <!-- 增加完成数量（仅当当前完成数小于目标值时执行） -->
     <update id="updateAddCompleteCount" parameterType="java.lang.String">
         <![CDATA[
         update group_buy_order
@@ -72,29 +50,27 @@
         ]]>
     </update>
 
-    <!-- 减少锁定数量（仅当当前锁定数大于0时执行） -->
     <update id="updateSubtractionLockCount" parameterType="java.lang.String">
         update group_buy_order
         set lock_count = lock_count - 1, update_time= now()
         where team_id = #{teamId} and lock_count > 0
     </update>
 
-    <!-- 将订单状态更新为已完成（仅当原状态为未完成时执行） -->
     <update id="updateOrderStatus2COMPLETE" parameterType="java.lang.String">
         update group_buy_order
-        set status = 1, update_time= now()
-        where team_id = #{teamId} and status = 0
+        set status     = 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and status = 0
     </update>
 
-    <!-- 根据团队ID查询拼团进度信息 -->
-    <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="progressResultMap">
+    <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="dataMap">
         select target_count, complete_count, lock_count from group_buy_order
         where team_id = #{teamId}
     </select>
 
-    <!-- 根据团队ID查询完整的团队订单详情 -->
-    <select id="queryGroupBuyTeamByTeamId" parameterType="java.lang.String" resultMap="teamDetailsMap">
-        select team_id, activity_id, target_count, complete_count, lock_count, status, valid_start_time, valid_end_time
+    <select id="queryGroupBuyTeamByTeamId" parameterType="java.lang.String" resultMap="dataMap">
+        select team_id, activity_id, target_count, complete_count, lock_count, status, valid_start_time, valid_end_time, notify_url
         from group_buy_order where team_id = #{teamId}
     </select>
 

@@ -2,6 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lb.infrastructure.dao.INotifyTaskDao">
 
+    <!--
+     * 通知任务实体类与数据库字段的映射关系配置
+     * 将数据库表的字段映射到NotifyTask对象的对应属性
+    -->
     <resultMap id="dataMap" type="com.lb.infrastructure.dao.po.NotifyTask">
         <id column="id" property="id"/>
         <result column="activity_id" property="activityId"/>
@@ -14,10 +18,77 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <!--
+     * 插入新的通知任务记录
+     * @param task 通知任务对象，包含activityId、teamId、notifyUrl等属性
+     * @return 影响的行数（成功插入返回1）
+    -->
     <insert id="insert" parameterType="com.lb.infrastructure.dao.po.NotifyTask">
         insert into notify_task(activity_id, team_id, notify_url, notify_count, notify_status, parameter_json,
                                 create_time, update_time)
-        values(#{activityId}, #{teamId}, #{notifyUrl}, #{notifyCount}, #{notifyStatus}, #{parameterJson}, now(),now())
+        values (#{activityId}, #{teamId}, #{notifyUrl}, #{notifyCount}, #{notifyStatus}, #{parameterJson}, now(), now())
     </insert>
+
+    <!--
+     * 查询状态为未执行（0）或待重试（2）的通知任务列表，最多返回50条
+     * @return 符合条件的通知任务列表
+    -->
+    <select id="queryUnExecutedNotifyTaskList" resultMap="dataMap">
+        select activity_id, team_id, notify_url, notify_count, notify_status, parameter_json
+        from notify_task
+        where notify_status in (0, 2)
+        limit 50
+    </select>
+
+    <!--
+     * 根据团队ID查询状态为未执行（0）或待重试（2）的通知任务
+     * @param teamId 团队ID
+     * @return 符合条件的通知任务列表
+    -->
+    <select id="queryUnExecutedNotifyTaskByTeamId" resultMap="dataMap">
+        select activity_id, team_id, notify_url, notify_count, notify_status, parameter_json
+        from notify_task
+        where team_id = #{teamId}
+          and notify_status in (0, 2)
+    </select>
+
+    <!--
+     * 根据团队ID更新通知任务状态为成功（1），并增加通知次数和更新时间
+     * @param teamId 团队ID
+     * @return 影响的行数
+    -->
+    <update id="updateNotifyTaskStatusSuccess" parameterType="java.lang.String">
+        update notify_task
+        set notify_count  = notify_count + 1,
+            notify_status = 1,
+            update_time   = now()
+        where team_id = #{teamId}
+    </update>
+
+    <!--
+     * 根据团队ID更新通知任务状态为失败（3），并增加通知次数和更新时间
+     * @param teamId 团队ID
+     * @return 影响的行数
+    -->
+    <update id="updateNotifyTaskStatusError" parameterType="java.lang.String">
+        update notify_task
+        set notify_count  = notify_count + 1,
+            notify_status = 3,
+            update_time   = now()
+        where team_id = #{teamId}
+    </update>
+
+    <!--
+     * 根据团队ID更新通知任务状态为待重试（2），并增加通知次数和更新时间
+     * @param teamId 团队ID
+     * @return 影响的行数
+    -->
+    <update id="updateNotifyTaskStatusRetry" parameterType="java.lang.String">
+        update notify_task
+        set notify_count  = notify_count + 1,
+            notify_status = 2,
+            update_time   = now()
+        where team_id = #{teamId}
+    </update>
 
 </mapper>
