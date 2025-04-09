@@ -2,6 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.lb.infrastructure.dao.IGroupBuyOrderDao">
 
+    <!--
+        数据映射：将数据库表group_buy_order的列映射到GroupBuyOrder对象的属性。
+        映射关系包括id、team_id、activity_id等字段到对应的Java属性。
+    -->
     <resultMap id="dataMap" type="com.lb.infrastructure.dao.po.GroupBuyOrder">
         <id column="id" property="id"/>
         <result column="team_id" property="teamId"/>
@@ -22,40 +26,70 @@
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
+    <!--
+        插入新的团购订单记录。
+        参数：GroupBuyOrder对象（包含teamId、activityId等属性）。
+        返回值：插入操作影响的行数。
+        注意：status初始化为0，createTime和updateTime使用now()。
+    -->
     <insert id="insert" parameterType="com.lb.infrastructure.dao.po.GroupBuyOrder">
-        insert into group_buy_order(
-            team_id, activity_id, source, channel, original_price,
-            deduction_price, pay_price, target_count, complete_count,
-            lock_count, status, valid_start_time, valid_end_time, notify_url, create_time, update_time
-        ) values(
-                    #{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
-                    #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount},
-                    #{lockCount}, 0, #{validStartTime}, #{validEndTime}, #{notifyUrl}, now(), now()
-                )
+        insert into group_buy_order(team_id, activity_id, source, channel, original_price,
+                                    deduction_price, pay_price, target_count, complete_count,
+                                    lock_count, status, valid_start_time, valid_end_time, notify_url, create_time,
+                                    update_time)
+        values (#{teamId}, #{activityId}, #{source}, #{channel}, #{originalPrice},
+                #{deductionPrice}, #{payPrice}, #{targetCount}, #{completeCount},
+                #{lockCount}, 0, #{validStartTime}, #{validEndTime}, #{notifyUrl}, now(), now())
     </insert>
 
+    <!--
+        增加指定团队的锁定人数（lock_count），仅当当前锁定人数小于目标人数时执行。
+        参数：teamId（团队ID）。
+        返回值：更新操作影响的行数。
+    -->
     <update id="updateAddLockCount" parameterType="java.lang.String">
         <![CDATA[
         update group_buy_order
-        set lock_count = lock_count + 1, update_time= now()
-        where team_id = #{teamId} and lock_count < target_count
+        set lock_count = lock_count + 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and lock_count < target_count
         ]]>
     </update>
 
+    <!--
+        增加指定团队的已完成人数（complete_count），仅当当前完成人数小于目标人数时执行。
+        参数：teamId（团队ID）。
+        返回值：更新操作影响的行数。
+    -->
     <update id="updateAddCompleteCount" parameterType="java.lang.String">
         <![CDATA[
         update group_buy_order
-        set complete_count = complete_count + 1, update_time= now()
-        where team_id = #{teamId} and complete_count < target_count
+        set complete_count = complete_count + 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and complete_count < target_count
         ]]>
     </update>
 
+    <!--
+        减少指定团队的锁定人数（lock_count），仅当当前锁定人数大于0时执行。
+        参数：teamId（团队ID）。
+        返回值：更新操作影响的行数。
+    -->
     <update id="updateSubtractionLockCount" parameterType="java.lang.String">
         update group_buy_order
-        set lock_count = lock_count - 1, update_time= now()
-        where team_id = #{teamId} and lock_count > 0
+        set lock_count = lock_count - 1,
+            update_time= now()
+        where team_id = #{teamId}
+          and lock_count > 0
     </update>
 
+    <!--
+        将指定团队的订单状态设为已完成（status=1），仅当当前状态为0时执行。
+        参数：teamId（团队ID）。
+        返回值：更新操作影响的行数。
+    -->
     <update id="updateOrderStatus2COMPLETE" parameterType="java.lang.String">
         update group_buy_order
         set status     = 1,
@@ -64,14 +98,89 @@
           and status = 0
     </update>
 
+    <!--
+        根据团队ID查询团购进度信息，包括目标人数、已完成人数和锁定人数。
+        参数：teamId（团队ID）。
+        返回值：包含target_count、complete_count、lock_count的GroupBuyOrder对象。
+    -->
     <select id="queryGroupBuyProgress" parameterType="java.lang.String" resultMap="dataMap">
-        select target_count, complete_count, lock_count from group_buy_order
+        select target_count, complete_count, lock_count
+        from group_buy_order
         where team_id = #{teamId}
     </select>
 
+    <!--
+        根据团队ID查询团队订单的详细信息，包括活动ID、状态、时间等。
+        参数：teamId（团队ID）。
+        返回值：包含团队订单详细信息的GroupBuyOrder对象。
+    -->
     <select id="queryGroupBuyTeamByTeamId" parameterType="java.lang.String" resultMap="dataMap">
-        select team_id, activity_id, target_count, complete_count, lock_count, status, valid_start_time, valid_end_time, notify_url
-        from group_buy_order where team_id = #{teamId}
+        select team_id,
+               activity_id,
+               target_count,
+               complete_count,
+               lock_count,
+               status,
+               valid_start_time,
+               valid_end_time,
+               notify_url
+        from group_buy_order
+        where team_id = #{teamId}
+    </select>
+
+    <!--
+        根据多个团队ID查询符合条件的团购订单（状态为0且锁定人数未达目标）。
+        参数：teamIds（团队ID集合）。
+        返回值：符合条件的GroupBuyOrder对象列表。
+        动态SQL说明：使用foreach生成IN子句遍历teamIds集合。
+    -->
+    <select id="queryGroupBuyProgressByTeamIds" parameterType="java.util.Set" resultMap="dataMap">
+        select team_id, activity_id, target_count, complete_count, lock_count, status, valid_start_time, valid_end_time,
+        notify_url
+        from group_buy_order
+        where status = 0 and target_count > lock_count and team_id in
+        <foreach item="teamId" collection="teamIds" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </select>
+
+    <!--
+        统计指定团队ID集合的总记录数。
+        参数：teamIds（团队ID集合）。
+        返回值：符合条件的记录总数（整数）。
+    -->
+    <select id="queryAllTeamCount" parameterType="java.util.Set" resultType="java.lang.Integer">
+        select count(id) from group_buy_order
+        where team_id in
+        <foreach item="teamId" collection="teamIds" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </select>
+
+    <!--
+        统计指定团队ID集合中已完成的团队数量（状态为1）。
+        参数：teamIds（团队ID集合）。
+        返回值：已完成的团队数量（整数）。
+    -->
+    <select id="queryAllTeamCompleteCount" parameterType="java.util.Set" resultType="java.lang.Integer">
+        select count(id) from group_buy_order
+        where status = 1 and team_id in
+        <foreach item="teamId" collection="teamIds" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
+    </select>
+
+    <!--
+        统计指定团队ID集合中所有用户的锁定人数总和。
+        参数：teamIds（团队ID集合）。
+        返回值：锁定人数总和（整数）。
+    -->
+    <select id="queryAllUserCount" parameterType="java.util.Set" resultType="java.lang.Integer">
+        select sum(lock_count) from group_buy_order
+        where team_id in
+        <foreach item="teamId" collection="teamIds" open="(" separator="," close=")">
+            #{teamId}
+        </foreach>
     </select>
 
 </mapper>

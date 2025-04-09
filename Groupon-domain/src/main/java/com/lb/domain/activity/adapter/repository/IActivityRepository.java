@@ -1,8 +1,12 @@
 package com.lb.domain.activity.adapter.repository;
 
+import com.lb.domain.activity.model.entity.UserGroupBuyOrderDetailEntity;
 import com.lb.domain.activity.model.valobj.GroupBuyActivityDiscountVO;
 import com.lb.domain.activity.model.valobj.SCSkuActivityVO;
 import com.lb.domain.activity.model.valobj.SkuVO;
+import com.lb.domain.activity.model.valobj.TeamStatisticVO;
+
+import java.util.List;
 
 public interface IActivityRepository {
 
@@ -17,4 +21,10 @@ public interface IActivityRepository {
     boolean downgradeSwitch();
 
     boolean cutRange(String userId);
+
+    List<UserGroupBuyOrderDetailEntity> queryInProgressUserGroupBuyOrderDetailListByOwner(Long activityId, String userId, Integer ownerCount);
+
+    List<UserGroupBuyOrderDetailEntity> queryInProgressUserGroupBuyOrderDetailListByRandom(Long activityId, String userId, Integer randomCount);
+
+    TeamStatisticVO queryTeamStatisticByActivityId(Long activityId);
 }
